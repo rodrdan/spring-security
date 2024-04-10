@@ -17,15 +17,24 @@ import javax.sql.DataSource;
 @Configuration
 public class DemoSecurityConfig {
 
-    // setting-up users for JDBC... no hardcoding (preffered way)
+
+    // setting-up users for JDBC (custom tables, for standard tables see below the code)
     @Bean
     public UserDetailsManager userDetailsManager(DataSource dataSource) {
-        return new JdbcUserDetailsManager(dataSource);
+        JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
+
+        // query for getting the user from my table (Spring will input the username instead of '?')
+        jdbcUserDetailsManager.setUsersByUsernameQuery("SELECT user_id, pw, active FROM members WHERE user_id=?");
+
+        // query for getting the roles from my table (Spring will input the username instead of '?')
+        jdbcUserDetailsManager.setAuthoritiesByUsernameQuery("SELECT user_id, role FROM roles WHERE user_id=?");
+
+        return jdbcUserDetailsManager;
     }
 
-    // setting-up access to HTTP methods on endpoints to different roles
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // setting-up access to HTTP methods on endpoints to different roles
 
         http.authorizeHttpRequests(configurer ->
                 configurer
@@ -45,6 +54,14 @@ public class DemoSecurityConfig {
 
         return http.build();
     }
+}
+
+
+    /*    // setting-up users for JDBC (standard tables 'users' + 'authorities'... no hardcoding (preffered way)
+    @Bean
+    public UserDetailsManager userDetailsManager(DataSource dataSource) {
+        return new JdbcUserDetailsManager(dataSource);
+    }*/
 
     /*    // setting-up users of my app by hardcoding (not preffered)
     @Bean
@@ -69,4 +86,3 @@ public class DemoSecurityConfig {
 
         return new InMemoryUserDetailsManager(john, mary, susan);
     }*/
-}
